@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เต่าซิ่งปั้นพอร์ต 1,000$</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; background-color: #0b0e14; color: #e6edf3; }
+        .input-box { background: #1a1f29; border: 1px solid #30363d; border-radius: 0.5rem; padding: 0.5rem; color: #10b981; font-weight: bold; width: 100%; }
+        .input-profit { background: #052c16; border: 1px solid #10b981; border-radius: 4px; padding: 4px; color: #34d399; width: 85px; text-align: center; font-weight: bold; }
+        
+        /* สไตล์หน้ากระดาษ A4 ตอนแคปรูป */
+        #captureTarget { 
+            width: 800px; 
+            margin: 0 auto;
+            background: #0b0e14;
+            padding: 50px;
+            border: 3px solid #10b981;
+        }
+        .row-done { background-color: rgba(16, 185, 129, 0.1) !important; }
+        @media (max-width: 800px) { #captureTarget { width: 100%; padding: 15px; } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="glass-card bg-gray-900/50 p-6 mb-6 rounded-xl border border-gray-800">
+            <h2 class="text-emerald-500 mb-4 font-bold text-xl"><i class="fas fa-tools mr-2"></i> ตั้งค่าภารกิจพิชิตล้าน (มั้ง)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                <div>
+                    <label class="text-gray-400">เงินต้นเริ่มปั้น ($)</label>
+                    <input type="number" id="baseStart" value="15.00" step="0.01" class="input-box" oninput="renderTable()">
+                </div>
+                <div>
+                    <label class="text-gray-400">เป้าหมายสูงสุด ($)</label>
+                    <input type="number" id="baseTarget" value="1000.00" step="0.01" class="input-box text-yellow-500" oninput="renderTable()">
+                </div>
+                <div>
+                    <label class="text-gray-400">ระยะตัดขาดทุน (จุด)</label>
+                    <input type="number" id="slPoints" value="300" class="input-box text-red-400" oninput="renderTable()">
+                </div>
+                <div>
+                    <label class="text-gray-400">แบ่งเทรด (กี่ไม้)</label>
+                    <input type="number" id="numOrders" value="2" class="input-box text-blue-400" oninput="renderTable()">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="captureImage()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-lg transition-all">
+                    <i class="fas fa-camera mr-2"></i> แคปรูปรายงานไปขิงเพื่อน
+                </button>
+                <button onclick="resetData()" class="px-6 bg-gray-800 hover:bg-red-900 text-gray-400 rounded-lg">
+                    <i class="fas fa-sync-alt"></i> รีเซ็ต
+                </button>
+            </div>
+        </div>
+
+        <div id="captureTarget" class="rounded-2xl shadow-2xl">
+            <div class="text-center mb-12">
+                <h1 class="text-5xl font-extrabold text-emerald-400 mb-2 uppercase">🐢 แผนปั้นพอร์ตเต่าซิ่ง</h1>
+                <p class="text-gray-400 tracking-widest">จาก $15 สู่ $1,000 | ภารกิจ 30 วันอันตราย</p>
+                <div id="dailyRateText" class="inline-block mt-4 px-6 py-2 bg-emerald-950 text-emerald-300 rounded-full text-sm font-bold border border-emerald-500/30"></div>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-emerald-500/50 text-gray-500 text-xs">
+                        <th class="py-4 px-2 text-center">จบงาน</th>
+                        <th class="py-4 px-2">วันที่</th>
+                        <th class="py-4 px-2 text-right">เงินต้น ($)</th>
+                        <th class="py-4 px-2 text-right text-gray-600">เป้ากำไรวันนี้</th>
+                        <th class="py-4 px-2 text-center text-emerald-400 font-bold">กำไรที่ทำได้จริง</th>
+                        <th class="py-4 px-2 text-right text-blue-400 font-bold">หลอดต่อไม้ (รวม)</th>
+                    </tr>
+                </thead>
+                <tbody id="planBody"></tbody>
+            </table>
+
+            <div class="mt-12 flex justify-between items-center border-t border-gray-800 pt-6 px-4">
+                <div class="text-xs text-gray-600 italic">
+                    * กำไรไม่ได้มาเพราะโชคช่วย แต่มาเพราะกราฟลากไป *
+                </div>
+                <div class="text-right text-xs font-bold text-emerald-500/50">
+                    สถานะปัจจุบัน: <span id="overallStatus" class="text-emerald-400">กำลังเดินทาง</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userData = JSON.parse(localStorage.getItem('turtle_thai_v1') || '{"profits":{}, "dones":{}}');
+
+        function renderTable() {
+            const start = parseFloat(document.getElementById('baseStart').value) || 15.00;
+            const target = parseFloat(document.getElementById('baseTarget').value) || 1000.00;
+            const sl = parseFloat(document.getElementById('slPoints').value) || 300;
+            const orders = parseInt(document.getElementById('numOrders').value) || 1;
+            
+            const dailyRate = Math.pow(target / start, 1 / 30) - 1;
+            document.getElementById('dailyRateText').innerText = `เป้าหมายต้องเก็บวันละ: ${(dailyRate * 100).toFixed(2)}%`;
+
+            let html = '';
+            let currentBal = start;
+
+            for (let d = 1; d <= 30; d++) {
+                let targetProfit = currentBal * dailyRate;
+                let actualProfit = userData.profits[d] || 0;
+                let isDone = userData.dones[d];
+
+                // คำนวณ Lot 2 ตำแหน่งเป๊ะๆ
+                let totalLot = (currentBal * 0.15) / (sl * 0.1);
+                if (totalLot < 0.01) totalLot = 0.01;
+                let lotPerOrder = totalLot / orders;
+
+                html += `
+                <tr class="border-b border-gray-800/50 transition-all ${isDone ? 'row-done' : ''}">
+                    <td class="py-4 px-2 text-center">
+                        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone(${d})" class="w-5 h-5 accent-emerald-500 cursor-pointer">
+                    </td>
+                    <td class="py-4 px-2 text-center font-bold text-gray-500">วันที่ ${d}</td>
+                    <td class="py-4 px-2 text-right font-mono text-base">$${currentBal.toFixed(2)}</td>
+                    <td class="py-4 px-2 text-right text-gray-600">+$${targetProfit.toFixed(2)}</td>
+                    <td class="py-4 px-2 text-center">
+                        <input type="number" step="0.01" value="${actualProfit || ''}" 
+                            class="input-profit outline-none" 
+                            placeholder="0.00"
+                            onchange="updateProfit(${d}, this.value)">
+                    </td>
+                    <td class="py-4 px-2 text-right">
+                        <span class="text-blue-400 font-bold">${lotPerOrder.toFixed(2)}</span>
+                        <span class="text-gray-700 text-[10px] ml-1">(${totalLot.toFixed(2)})</span>
+                    </td>
+                </tr>`;
+                
+                // เงินต้นวันถัดไปใช้ 2 ตำแหน่ง
+                currentBal = parseFloat((currentBal + (actualProfit || targetProfit)).toFixed(2));
+            }
+            document.getElementById('planBody').innerHTML = html;
+
+            const doneCount = Object.values(userData.dones).filter(v => v).length;
+            document.getElementById('overallStatus').innerText = doneCount >= 30 ? "เทพเจ้าเต่าซิ่ง!" : "กำลังซิ่งสู้ชีวิต";
+        }
+
+        function updateProfit(d, v) {
+            userData.profits[d] = parseFloat(parseFloat(v).toFixed(2)) || 0;
+            save(); renderTable();
+        }
+
+        function toggleDone(d) {
+            userData.dones[d] = !userData.dones[d];
+            save(); renderTable();
+        }
+
+        function save() { localStorage.setItem('turtle_thai_v1', JSON.stringify(userData)); }
+
+        function resetData() {
+            if(confirm("ล้างข้อมูลใหม่หมดเลยใช่ไหม?")) {
+                userData = {"profits":{}, "dones":{}};
+                save(); renderTable();
+            }
+        }
+
+        async function captureImage() {
+            const area = document.getElementById('captureTarget');
+            const canvas = await html2canvas(area, { backgroundColor: '#0b0e14', scale: 2 });
+            const link = document.createElement('a');
+            link.download = `แผนปั้นพอร์ตเต่าซิ่ง_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
